@@ -2499,12 +2499,6 @@ function saveCert(){
   p.paymentcerts.push({id:uid(),num,period,worksValue:wv,retention:ret,previousCert:prev,netCert:net,status:'draft',date:document.getElementById('cert-date').value});
   closeModal('modal-new-cert');render();
 }
-function saveVariation(){
-  const desc=document.getElementById('vo-desc').value.trim();if(!desc)return;
-  const p=proj();const num='VO-'+String(p.variations.length+1).padStart(3,'0');
-  p.variations.push({id:uid(),num,description:desc,trade:document.getElementById('vo-trade').value,requestedBy:document.getElementById('vo-requestedby').value,amount:document.getElementById('vo-amount').value,impact:document.getElementById('vo-impact').value,date:document.getElementById('vo-date').value,status:'pending'});
-  closeModal('modal-new-variation');render();
-}
 
 // ---- BUDGET ----
 function renderBudget(){
@@ -3774,26 +3768,6 @@ const _pd=document.getElementById('print-date');if(_pd)_pd.textContent='Generate
   </div>
 </div>
 
-<!-- VARIATION MODAL -->
-<div class="modal-overlay" id="modal-new-variation">
-  <div class="modal">
-    <div class="modal-title" data-en="New variation order" data-es="Nueva orden de variación">New variation order</div>
-    <div class="form-grid">
-      <div class="form-group full"><label class="form-label" data-en="Description" data-es="Descripción">Description</label><textarea class="form-input" id="vo-desc" placeholder=""></textarea></div>
-      <div class="form-group"><label class="form-label" data-en="Trade" data-es="Especialidad">Trade</label>
-        <select class="form-input form-select" id="vo-trade"><option data-en="Civil" data-es="Civil">Civil</option><option data-en="Structural" data-es="Estructural">Structural</option><option data-en="MEP" data-es="MEP">MEP</option><option data-en="Finishes" data-es="Acabados">Finishes</option><option data-en="General" data-es="General">General</option></select>
-      </div>
-      <div class="form-group"><label class="form-label" data-en="Requested by" data-es="Solicitado por">Requested by</label><input class="form-input" id="vo-requestedby" placeholder=""></div>
-      <div class="form-group"><label class="form-label" data-en="Amount (USD)" data-es="Monto (USD)">Amount (USD)</label><input class="form-input" id="vo-amount" type="number" placeholder="0"></div>
-      <div class="form-group"><label class="form-label" data-en="Schedule impact" data-es="Impacto en plazo">Schedule impact</label><input class="form-input" id="vo-impact" placeholder="e.g. 3 days"></div>
-      <div class="form-group"><label class="form-label" data-en="Date" data-es="Fecha">Date</label><input class="form-input" id="vo-date" type="date"></div>
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-secondary" onclick="closeModal('modal-new-variation')" data-en="Cancel" data-es="Cancelar">Cancel</button>
-      <button class="btn btn-primary" onclick="saveVariation()" data-en="Submit variation" data-es="Registrar variación">Submit variation</button>
-    </div>
-  </div>
-</div>
 
 <!-- BUDGET MODAL -->
 <div class="modal-overlay" id="modal-new-budget">
