@@ -1240,9 +1240,9 @@ const DB = {
         {id:3,ref:'IPC-03',period:'2025-04-01 to 2025-04-30',valueComplete:22800,retention:2280,previousCerts:58050,netDue:20520,status:'draft',date:'2025-05-05'},
       ],
       invoices:[
-        {id:1,ref:'INV-001',to:'Savannah Developments Ltd.',description:'Payment Certificate IPC-01 — Jan–Feb 2025',amount:34650,tax:0,total:34650,status:'paid',issued:'2025-03-05',due:'2025-03-19'},
-        {id:2,ref:'INV-002',to:'Savannah Developments Ltd.',description:'Payment Certificate IPC-02 — March 2025',amount:23400,tax:0,total:23400,status:'paid',issued:'2025-04-08',due:'2025-04-22'},
-        {id:3,ref:'INV-003',to:'Savannah Developments Ltd.',description:'Payment Certificate IPC-03 — April 2025',amount:20520,tax:0,total:20520,status:'draft',issued:'2025-05-05',due:'2025-05-19'},
+        {id:1,ref:'INV-001',to:'Savannah Developments Ltd.',description:'Payment Certificate IPC-01 — Jan–Feb 2025',amount:34650,tax:0,total:34650,status:'paid',issued:'2025-03-05',due:'2025-03-19',paycert_id:1},
+        {id:2,ref:'INV-002',to:'Savannah Developments Ltd.',description:'Payment Certificate IPC-02 — March 2025',amount:23400,tax:0,total:23400,status:'paid',issued:'2025-04-08',due:'2025-04-22',paycert_id:2},
+        {id:3,ref:'INV-003',to:'Savannah Developments Ltd.',description:'Payment Certificate IPC-03 — April 2025',amount:20520,tax:0,total:20520,status:'draft',issued:'2025-05-05',due:'2025-05-19',paycert_id:3},
       ]
     },
     {id:2,sample:true,name:'Waterfront Commercial Fit-out',client:'Harbourfront Holdings Ltd.',type:'Commercial',start:'2025-03-01',end:'2025-07-31',pm:'Project Manager',value:120000,desc:'Level 4 open-plan office renovation',
@@ -1647,6 +1647,40 @@ function renderDashboard(){
         ${t?'Agrega partidas de presupuesto para ver el resumen financiero.':'Add budget line items to see financial summary.'}
         <div style="margin-top:12px;"><button class="btn btn-secondary btn-sm" onclick="go(\'budget\')">${t?'Ir a Presupuesto':'Go to Budget'}</button></div>
       </div></div>`;
+    })()}
+
+    <!-- COST FINANCIAL CHAIN CARD -->
+    ${(()=>{
+      if(!allBudget.length)return'';
+      const issuedCerts=allCerts.filter(c=>['issued','paid'].includes(String(c.status||'').toLowerCase()));
+      const certifiedToDate=issuedCerts.reduce((s,c)=>s+Number(c.netDue||0),0);
+      const allInv=scopeProjects.flatMap(p=>p.invoices||[]);
+      const invoicedToDate=allInv.reduce((s,i)=>s+Number(i.total||i.amount||0),0);
+      const paidToDate=allInv.filter(i=>String(i.status||'').toLowerCase()==='paid').reduce((s,i)=>s+Number(i.total||i.amount||0),0);
+      const outstandingToDate=invoicedToDate-paidToDate;
+      const chainPct=v=>revisedBudget?Math.min(100,Math.round(v/revisedBudget*100)):0;
+      const row=(labelEn,labelEs,val,color,pct,showBar)=>`
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);">
+          <div style="width:160px;font-size:12px;color:var(--text2);flex-shrink:0;">${t?labelEs:labelEn}</div>
+          <div style="flex:1;">${showBar?`<div class="progress-wrap" style="height:6px;"><div class="progress-bar" style="width:${pct}%;background:${color};"></div></div>`:'<div style="height:6px;"></div>'}</div>
+          <div style="width:110px;text-align:right;font-size:13px;font-weight:700;color:${color};">${money(val)}</div>
+          ${showBar?`<div style="width:36px;text-align:right;font-size:11px;color:var(--text3);">${pct}%</div>`:'<div style="width:36px;"></div>'}
+        </div>`;
+      return`<div class="card"><div class="card-header"><div class="card-title">${t?'Cadena financiera del contrato':'Contract financial chain'}</div><button class="btn btn-secondary btn-sm" onclick="go('paycerts')">${t?'Certificados':'Certs'}</button></div>
+        <div style="padding:8px 20px 4px;">
+          ${row('Original contract','Contrato original',totalBudget,'var(--text)',chainPct(totalBudget),false)}
+          ${approvedVariations?row('+ Approved variations','+ Variaciones aprobadas',approvedVariations,'var(--warn)',chainPct(approvedVariations),true):''}
+          ${row('Revised contract value','Valor contrato revisado',revisedBudget,'var(--accent)',100,false)}
+          ${row('Certified to date','Certificado a la fecha',certifiedToDate,'var(--ok)',chainPct(certifiedToDate),true)}
+          ${row('Invoiced to date','Facturado a la fecha',invoicedToDate,'var(--accent2)',chainPct(invoicedToDate),true)}
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 0;">
+            <div style="width:160px;font-size:12px;color:var(--text2);flex-shrink:0;">${t?'Pagado':'Paid'}</div>
+            <div style="flex:1;"><div class="progress-wrap" style="height:6px;"><div class="progress-bar" style="width:${chainPct(paidToDate)}%;background:var(--ok);"></div></div></div>
+            <div style="width:110px;text-align:right;font-size:13px;font-weight:700;color:var(--ok);">${money(paidToDate)}</div>
+            <div style="width:36px;text-align:right;font-size:11px;color:var(--text3);">${chainPct(paidToDate)}%</div>
+          </div>
+          ${outstandingToDate>0?`<div style="padding:8px 12px;border-radius:6px;background:var(--warn-light);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;"><span style="font-size:12px;color:var(--warn);font-weight:600;">${t?'⏳ Pendiente de cobro':'⏳ Outstanding'}</span><span style="font-size:14px;font-weight:700;color:var(--warn);">${money(outstandingToDate)}</span></div>`:''}
+        </div></div>`;
     })()}
 
     <!-- MATERIALS STRIP -->
@@ -2660,7 +2694,7 @@ function renderInvoices(){
   return`<div class="page">
   <div class="page-header">
     <div><div class="page-title">${t?'Facturas':'Invoices'}</div><div class="page-sub">${p.invoices.length} ${t?'facturas':'invoices'}</div></div>
-    <button class="btn btn-primary" onclick="openModal('modal-new-invoice')">+ ${t?'Nueva factura':'New invoice'}</button>
+    <button class="btn btn-primary" onclick="openInvoiceModal()">+ ${t?'Nueva factura':'New invoice'}</button>
   </div>
   <div class="tabs">${projTabs()}</div>
   <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px;">
@@ -2678,10 +2712,11 @@ function renderInvoices(){
       <tbody>
         ${p.invoices.map(inv=>{
           const isOverdueInv=inv.status!=='paid'&&od(inv.due);
+          const linkedCert=inv.paycert_id?p.paycerts.find(c=>String(c.id)===String(inv.paycert_id)):null;
           return`<tr>
             <td style="font-family:monospace;font-size:12px;font-weight:700;">${esc(inv.ref)}</td>
             <td style="font-size:12px;">${esc(inv.to)}</td>
-            <td style="font-size:12px;color:var(--text2);max-width:180px;">${esc(inv.description.substring(0,60))}${inv.description.length>60?'…':''}</td>
+            <td style="font-size:12px;color:var(--text2);max-width:180px;">${esc((inv.description||'').substring(0,60))}${(inv.description||'').length>60?'…':''}${linkedCert?`<div style="font-size:11px;margin-top:2px;"><span style="background:var(--accent-light);color:var(--accent);padding:1px 6px;border-radius:4px;font-family:monospace;">${esc(linkedCert.ref)}</span></div>`:''}</td>
             <td style="text-align:right;font-weight:600;font-size:14px;">${fmtUSD(inv.total)}</td>
             <td style="font-size:12px;">${fd(inv.issued)}</td>
             <td style="font-size:12px;${isOverdueInv?'color:var(--danger);font-weight:600':''}">${fd(inv.due)}${isOverdueInv?` <span class="badge badge-danger">${t?'Vencida':'Overdue'}</span>`:''}</td>
@@ -2701,6 +2736,14 @@ function issueCert(id){const c=proj().paycerts.find(c=>c.id===id);if(c)c.status=
 function issueInvoice(id){const i=proj().invoices.find(i=>i.id===id);if(i)i.status='issued';saveDB();render();}
 function markPaid(id){const i=proj().invoices.find(i=>i.id===id);if(i)i.status='paid';saveDB();render();}
 
+function openInvoiceModal(){
+  openModal('modal-new-invoice');
+  const sel=document.getElementById('inv-paycert');
+  if(!sel)return;
+  const t=lang==='es';
+  const certs=proj().paycerts||[];
+  sel.innerHTML=`<option value="">— ${t?'Ninguno':'None'} —</option>`+certs.map(c=>`<option value="${c.id}">${c.ref} – ${money(c.netDue)} (${c.status})</option>`).join('');
+}
 function saveBudgetItem(){
   const desc=document.getElementById('bi-desc').value.trim();if(!desc)return;
   proj().budget.push({id:uid(),code:document.getElementById('bi-code').value,description:desc,cat:document.getElementById('bi-cat').value,budgeted:Number(document.getElementById('bi-budgeted').value)||0,committed:Number(document.getElementById('bi-committed').value)||0,actual:Number(document.getElementById('bi-actual').value)||0});
@@ -2726,7 +2769,8 @@ function saveInvoice(){
   const to=document.getElementById('inv-to').value.trim();if(!to)return;
   const amt=Number(document.getElementById('inv-amount').value)||0;
   const n=proj().invoices.length+1;
-  proj().invoices.push({id:uid(),ref:`INV-${String(n).padStart(3,'0')}`,to,description:document.getElementById('inv-desc').value,amount:amt,tax:0,total:amt,status:'draft',issued:document.getElementById('inv-issued').value,due:document.getElementById('inv-due').value});
+  const certId=document.getElementById('inv-paycert')?.value||'';
+  proj().invoices.push({id:uid(),ref:`INV-${String(n).padStart(3,'0')}`,to,description:document.getElementById('inv-desc').value,amount:amt,tax:0,total:amt,status:'draft',issued:document.getElementById('inv-issued').value,due:document.getElementById('inv-due').value,paycert_id:certId||null});
   closeModal('modal-new-invoice');render();
 }
 
@@ -3577,7 +3621,7 @@ async function loadUserData(){
     }
     const loaded=await Promise.all(projects.map(async p=>{
       const pid=p.id;
-      const [tasks,materials,ncrs,risks,issues,rfis,budget,paycerts,invoices]=await Promise.all([
+      const [tasks,materials,ncrs,risks,issues,rfis,budget,variations,paycerts,invoices]=await Promise.all([
         _SB.from('tasks').select('*').eq('project_id',pid).order('created_at'),
         _SB.from('materials').select('*').eq('project_id',pid).order('created_at'),
         _SB.from('ncrs').select('*').eq('project_id',pid).order('created_at'),
@@ -3585,11 +3629,12 @@ async function loadUserData(){
         _SB.from('issues').select('*').eq('project_id',pid).order('created_at'),
         _SB.from('rfis').select('*').eq('project_id',pid).order('created_at'),
         _SB.from('budget_items').select('*').eq('project_id',pid).order('created_at'),
+        _SB.from('variations').select('*').eq('project_id',pid).order('created_at').catch(()=>({data:[],error:null})),
         _SB.from('payment_certs').select('*').eq('project_id',pid).order('created_at'),
         _SB.from('invoices').select('*').eq('project_id',pid).order('created_at')
       ]);
-      [tasks,materials,ncrs,risks,issues,rfis,budget,paycerts,invoices].forEach(r=>{if(r.error)console.warn('Load related warning:',r.error);});
-      return mapProjectFromSupabase(p,{tasks:tasks.data,materials:materials.data,ncrs:ncrs.data,risks:risks.data,issues:issues.data,rfis:rfis.data,budget:budget.data,paycerts:paycerts.data,invoices:invoices.data});
+      [tasks,materials,ncrs,risks,issues,rfis,budget,variations,paycerts,invoices].forEach(r=>{if(r.error)console.warn('Load related warning:',r.error);});
+      return mapProjectFromSupabase(p,{tasks:tasks.data,materials:materials.data,ncrs:ncrs.data,risks:risks.data,issues:issues.data,rfis:rfis.data,budget:budget.data,variations:variations.data,paycerts:paycerts.data,invoices:invoices.data});
     }));
     DB.projects=loaded;
     ensureUserSampleProjects();
@@ -3604,7 +3649,7 @@ async function loadUserData(){
   }
 }
 function mapProjectFromSupabase(p,related){
-  const relatedCount=['tasks','materials','ncrs','risks','issues','rfis','budget','paycerts','invoices']
+  const relatedCount=['tasks','materials','ncrs','risks','issues','rfis','budget','variations','paycerts','invoices']
     .reduce((total,key)=>total+safeArr(related?.[key]).length,0);
   const demoMatch=defaultSampleForProject({id:p.id,name:p.name});
   const isSampleProject=!!p.is_sample || (!!demoMatch && relatedCount===0);
@@ -3622,7 +3667,7 @@ function mapProjectFromSupabase(p,related){
     rfis:safeArr(related.rfis).map(r=>({id:r.id,_dbId:r.id,ref:r.ref||'',subject:r.subject||'',from:r.from_party||'',to:r.to_party||'',date:r.date_raised||'',due:r.response_due||'',status:r.status||'open',linkedTask:r.task_id||'',response:r.response_notes||''})),
     inspections:[],
     budget:safeArr(related.budget).map(b=>({id:b.id,_dbId:b.id,code:b.category||'',description:b.description||'',cat:b.category||'',budgeted:safeNum(b.budget_amount),committed:safeNum(b.committed_amount),actual:safeNum(b.actual_amount)})),
-    variations:[],
+    variations:safeArr(related.variations).map(v=>({id:v.id,_dbId:v.id,ref:v.ref||'',description:v.description||'',submittedBy:v.submitted_by||'',date:v.date_submitted||'',value:safeNum(v.value),costCode:v.cost_code||'',status:v.status||'pending'})),
     paycerts:safeArr(related.paycerts).map(c=>({id:c.id,_dbId:c.id,ref:c.cert_ref||'',period:c.period||'',valueComplete:safeNum(c.certified_amount),retention:0,previousCerts:0,netDue:safeNum(c.certified_amount),status:c.status||'pending',date:c.date_certified||''})),
     invoices:safeArr(related.invoices).map(i=>({id:i.id,_dbId:i.id,ref:i.invoice_ref||'',to:'',description:'',amount:safeNum(i.amount),total:safeNum(i.amount),paidAmount:safeNum(i.paid_amount),status:i.status||'unpaid',issued:i.invoice_date||'',due:i.due_date||''})),
     documents:[],safety:[]
@@ -3663,6 +3708,7 @@ async function syncProjectToCloud(p){
       replaceProjectRows('issues',p,p.issues||[],issueToRow),
       replaceProjectRows('rfis',p,p.rfis||[],rfiToRow),
       replaceProjectRows('budget_items',p,p.budget||[],budgetToRow),
+      replaceProjectRows('variations',p,p.variations||[],variationToRow),
       replaceProjectRows('payment_certs',p,p.paycerts||[],paycertToRow),
       replaceProjectRows('invoices',p,p.invoices||[],invoiceToRow)
     ]);
@@ -3684,6 +3730,7 @@ function ncrToRow(n,projectId){if(!n?.desc)return null;return{user_id:currentUse
 function riskToRow(r,projectId){if(!r?.desc)return null;return{user_id:currentUser.id,project_id:projectId,description:r.desc,category:r.cat||'',owner:r.owner||'',probability:safeNum(r.prob)||3,impact:safeNum(r.impact)||3,mitigation:r.mitigation||'',status:r.status||'open',is_sample:false};}
 function issueToRow(i,projectId){if(!i?.desc)return null;return{user_id:currentUser.id,project_id:projectId,description:i.desc,category:i.cat||'',priority:i.priority||'medium',raised_by:i.by||'',assigned_to:i.assigned||'',date_raised:i.date||null,due_date:i.due||null,resolution_notes:i.notes||'',status:i.status||'open',is_sample:false};}
 function rfiToRow(r,projectId){if(!r?.subject&&!r?.ref)return null;return{user_id:currentUser.id,project_id:projectId,task_id:isUUID(r.linkedTask)?r.linkedTask:null,ref:r.ref||'',subject:r.subject||'',from_party:r.from||'',to_party:r.to||'',date_raised:r.date||null,response_due:r.due||null,response_notes:r.response||'',status:r.status||'open',is_sample:false};}
+function variationToRow(v,projectId){if(!v?.ref&&!v?.description)return null;return{user_id:currentUser.id,project_id:projectId,ref:v.ref||'',description:v.description||'',submitted_by:v.submittedBy||'',date_submitted:v.date||null,value:safeNum(v.value),cost_code:v.costCode||'',status:v.status||'pending',is_sample:false};}
 function budgetToRow(b,projectId){if(!b?.description&&!b?.cat&&!b?.code)return null;return{user_id:currentUser.id,project_id:projectId,category:b.cat||b.code||'',description:b.description||'',budget_amount:safeNum(b.budgeted),actual_amount:safeNum(b.actual),committed_amount:safeNum(b.committed),is_sample:false};}
 function paycertToRow(c,projectId){if(!c?.ref&&!c?.period)return null;return{user_id:currentUser.id,project_id:projectId,cert_ref:c.ref||'',period:c.period||'',certified_amount:safeNum(c.netDue||c.valueComplete),date_certified:c.date||null,status:c.status||'pending',is_sample:false};}
 function invoiceToRow(i,projectId){if(!i?.ref&&!i?.amount&&!i?.total)return null;return{user_id:currentUser.id,project_id:projectId,invoice_ref:i.ref||'',amount:safeNum(i.total||i.amount),paid_amount:i.status==='paid'?safeNum(i.total||i.amount):safeNum(i.paidAmount),invoice_date:i.issued||null,due_date:i.due||null,status:i.status||'unpaid',is_sample:false};}
@@ -3835,6 +3882,7 @@ const _pd=document.getElementById('print-date');if(_pd)_pd.textContent='Generate
       <div class="form-group full"><label class="form-label" data-en="Invoice to" data-es="Facturar a">Invoice to</label><input class="form-input" id="inv-to" placeholder=""></div>
       <div class="form-group full"><label class="form-label" data-en="Description" data-es="Descripción">Description</label><input class="form-input" id="inv-desc" placeholder=""></div>
       <div class="form-group"><label class="form-label" data-en="Amount (USD)" data-es="Monto (USD)">Amount (USD)</label><input class="form-input" id="inv-amount" type="number" placeholder="0"></div>
+      <div class="form-group full"><label class="form-label" data-en="Payment certificate (optional)" data-es="Certificado de pago (opcional)">Payment certificate (optional)</label><select class="form-input" id="inv-paycert" onchange="(function(){const c=proj().paycerts.find(pc=>String(pc.id)===this.value);if(c){document.getElementById('inv-amount').value=c.netDue;document.getElementById('inv-desc').value=(lang==='es'?'Certificado de pago ':'Payment Certificate ')+c.ref;}}).call(this)"><option value="">— None —</option></select></div>
       <div class="form-group"><label class="form-label" data-en="Issue date" data-es="Fecha de emisión">Issue date</label><input class="form-input" id="inv-issued" type="date"></div>
       <div class="form-group"><label class="form-label" data-en="Due date" data-es="Fecha límite de pago">Due date</label><input class="form-input" id="inv-due" type="date"></div>
     </div>
