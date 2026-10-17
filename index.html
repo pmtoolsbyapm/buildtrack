@@ -2517,12 +2517,6 @@ function saveBudget(){
   proj().budget.push({id:uid(),code:document.getElementById('b-code').value,description:desc,trade:document.getElementById('b-trade').value,budgeted:document.getElementById('b-budgeted').value,actual:document.getElementById('b-actual').value||0});
   closeModal('modal-new-budget');render();
 }
-function saveInvoice(){
-  const desc=document.getElementById('inv-desc').value.trim();if(!desc)return;
-  const p=proj();const num='INV-'+String(p.invoices.length+1).padStart(3,'0');
-  p.invoices.push({id:uid(),num,description:desc,client:document.getElementById('inv-client').value,amount:document.getElementById('inv-amount').value,date:document.getElementById('inv-date').value,due:document.getElementById('inv-due').value,status:'draft'});
-  closeModal('modal-new-invoice');render();
-}
 function saveCert(){
   const period=document.getElementById('cert-period').value.trim();if(!period)return;
   const p=proj();const num='IPC-'+String(p.paymentcerts.length+1).padStart(3,'0');
@@ -3776,24 +3770,6 @@ const _pd=document.getElementById('print-date');if(_pd)_pd.textContent='Generate
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeModal('modal-new-budget')" data-en="Cancel" data-es="Cancelar">Cancel</button>
       <button class="btn btn-primary" onclick="saveBudget()" data-en="Save" data-es="Guardar">Save</button>
-    </div>
-  </div>
-</div>
-
-<!-- INVOICE MODAL -->
-<div class="modal-overlay" id="modal-new-invoice">
-  <div class="modal">
-    <div class="modal-title" data-en="New invoice" data-es="Nueva factura">New invoice</div>
-    <div class="form-grid">
-      <div class="form-group full"><label class="form-label" data-en="Description" data-es="Descripción">Description</label><textarea class="form-input" id="inv-desc" placeholder=""></textarea></div>
-      <div class="form-group"><label class="form-label" data-en="Client" data-es="Cliente">Client</label><input class="form-input" id="inv-client" placeholder=""></div>
-      <div class="form-group"><label class="form-label" data-en="Amount (USD)" data-es="Monto (USD)">Amount (USD)</label><input class="form-input" id="inv-amount" type="number" placeholder="0"></div>
-      <div class="form-group"><label class="form-label" data-en="Invoice date" data-es="Fecha de factura">Invoice date</label><input class="form-input" id="inv-date" type="date"></div>
-      <div class="form-group"><label class="form-label" data-en="Due date" data-es="Fecha de vencimiento">Due date</label><input class="form-input" id="inv-due" type="date"></div>
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-secondary" onclick="closeModal('modal-new-invoice')" data-en="Cancel" data-es="Cancelar">Cancel</button>
-      <button class="btn btn-primary" onclick="saveInvoice()" data-en="Create invoice" data-es="Crear factura">Create invoice</button>
     </div>
   </div>
 </div>
