@@ -4080,8 +4080,9 @@ async function btRecoverySubmit(event){
 }
 async function btRecoveryResend(event){event.preventDefault();const email=document.getElementById('btRecoveryEmail').value.trim();btRecoveryMessage('Solicitando enlace…');try{const {error}=await _SB.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin});if(error)throw error;btRecoveryMessage('Solicitud aceptada. Abre el enlace del nuevo correo para ver la pantalla de cambio de contraseña.');}catch(e){btRecoveryMessage(e.message||'No se pudo solicitar el enlace.');}}
 function btRecoveryClose(){sessionStorage.removeItem(BT_RECOVERY_KEY);btRecoveryRequested=false;document.getElementById('btPasswordRecovery')?.remove();const clean=new URL(window.location.href);clean.searchParams.delete('account');history.replaceState(null,'',clean.pathname+clean.search+clean.hash);}
+function btRecoveryEntry(session){if(session?.user?.email?.toLowerCase()!=='ing.roberty@gmail.com'||document.getElementById('btPasswordRecoveryEntry'))return;const button=document.createElement('button');button.id='btPasswordRecoveryEntry';button.textContent='Cambiar contraseña';button.setAttribute('style','position:fixed;bottom:18px;right:18px;z-index:9999;padding:12px 16px;border-radius:12px;border:1px solid #d5caed;background:#fff;color:#5036ae;box-shadow:0 3px 15px #0002;cursor:pointer');button.onclick=()=>{btRecoveryRequested=true;btRecoveryOpen(session);};document.body.appendChild(button);}
 _SB.auth.onAuthStateChange((event,session)=>{if(event==='PASSWORD_RECOVERY'){btRecoveryRequested=true;sessionStorage.setItem(BT_RECOVERY_KEY,'1');setTimeout(()=>btRecoveryOpen(session),0);}});
-if(btRecoveryRequested)_SB.auth.getSession().then(({data,error})=>{btRecoveryOpen(error?null:data?.session);if(error)btRecoveryMessage('No se pudo validar el enlace. Solicita otro desde esta pantalla.');});
+_SB.auth.getSession().then(({data,error})=>{if(btRecoveryRequested){btRecoveryOpen(error?null:data?.session);if(error)btRecoveryMessage('No se pudo validar el enlace. Solicita otro desde esta pantalla.');}else if(!error)btRecoveryEntry(data?.session);});
 
 </script></body>
 </html>
